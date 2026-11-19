@@ -169,10 +169,63 @@
 
   <!-- GUIDES LIST -->
   <section class="page" id="page-guides">
-    <div class="wrap">
-      <h2>Företagsguider</h2>
-      <p class="lead">Varje kategori har en vägledning. Guiderna markerade "Fullständig" innehåller steg, krav och länkar.</p>
+    <div class="guides-hero">
+      <div class="wrap guides-hero-inner">
+        <div class="guides-hero-copy">
+          <span class="guides-kicker">⭐ Din guide till företagande</span>
+          <h1>Vilket <em>företag</em> drömmer<br class="guides-title-break"> du om att starta?</h1>
+          <p>Få hjälp steg för steg med allt från idé till färdig verksamhet.</p>
+          <label class="guides-search">
+            <input id="guideSearch" type="search" placeholder="Sök efter företagsguide..." aria-label="Sök bland företagsguider">
+            <button type="button" id="guideSearchBtn">Sök</button>
+          </label>
+        </div>
+        <div class="guides-benefits" aria-label="Fördelar med guiderna">
+          <div><span aria-hidden="true">🚀</span><strong>Steg-för-steg guider</strong></div>
+          <div><span aria-hidden="true">🛡️</span><strong>Säker och pålitlig information</strong></div>
+          <div><span aria-hidden="true">🎧</span><strong>Enkel hjälp för dig</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="wrap guides-wrap">
+      <div class="guides-section-heading">
+        <h2>Populära kategorier</h2>
+        <button type="button" class="guides-text-button" id="guideExpand" aria-expanded="false">Se alla guider <span aria-hidden="true">→</span></button>
+      </div>
       <div class="grid" id="catGrid"></div>
+      <p class="guides-empty" id="guidesEmpty" hidden>Vi hittade inga guider som matchar din sökning.</p>
+      <span class="sr-only" id="guideCount" aria-live="polite"></span>
+
+      <div class="guides-popular">
+        <div class="guides-section-heading">
+          <h2>Populära guider</h2>
+          <button type="button" class="guides-text-button" data-guide-expand-link>Se fler guider <span aria-hidden="true">→</span></button>
+        </div>
+        <div class="guides-popular-layout">
+          <div class="guides-featured">
+            <button type="button" class="guides-featured-card" data-cat="bolag">
+              <span class="guides-featured-icon" aria-hidden="true">📈</span>
+              <span><strong>Så startar du ett aktiebolag (AB)</strong><small>En tydlig guide från idé till registrering.</small></span>
+              <span class="guides-featured-arrow" aria-hidden="true">→</span>
+            </button>
+            <button type="button" class="guides-featured-card" data-cat="restaurang">
+              <span class="guides-featured-icon" aria-hidden="true">🍽️</span>
+              <span><strong>Guide: Starta restaurang</strong><small>Planera lokal, tillstånd och öppning.</small></span>
+              <span class="guides-featured-arrow" aria-hidden="true">→</span>
+            </button>
+            <button type="button" class="guides-featured-card" data-cat="butik">
+              <span class="guides-featured-icon" aria-hidden="true">🛍️</span>
+              <span><strong>Så kommer du igång med e-handel</strong><small>Kom igång med din butik på nätet.</small></span>
+              <span class="guides-featured-arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
+          <aside class="guides-promo">
+            <h2>Förverkliga din idé med S.E.S.M.</h2>
+            <p>Vi hjälper dig att ta nästa steg mot din företagardröm.</p>
+            <button type="button" class="btn btn-primary btn-sm" data-go="projects">Starta din resa →</button>
+          </aside>
+        </div>
+      </div>
     </div>
   </section>
 

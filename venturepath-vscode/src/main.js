@@ -746,7 +746,7 @@ function setAccount(on){
   const n = document.getElementById("acctNote");
   if(n){
     n.style.display = on ? "none" : "block";
-    n.textContent = "Logga in med ditt Claude-konto för att spara projekt och budget. Utan inloggning kan du läsa guider och använda verktygen, men inget sparas.";
+    n.textContent = "Logga in med ditt konto för att spara projekt och budget. Utan inloggning kan du läsa guider och använda verktygen, men inget sparas.";
   }
 }
 function saveBudget(){
@@ -809,17 +809,76 @@ document.getElementById("menuBtn").onclick = ()=>toggleMenu();
 document.getElementById("navscrim").onclick = ()=>closeMenu();
 
 // Categories
+const GUIDE_CARD_STYLE = {
+  restaurang:{icon:"🍽️",background:"#a7462b"},
+  is:{icon:"🏭",background:"#24608a"},
+  bolag:{icon:"📈",background:"#264c83"},
+  butik:{icon:"🛍️",background:"#8a3d67"},
+  service:{icon:"🧹",background:"#24715f"},
+  bygg:{icon:"👷",background:"#9a6720"},
+  transport:{icon:"🚚",background:"#286579"},
+  it:{icon:"💻",background:"#514b91"},
+  konsult:{icon:"💡",background:"#857022"},
+  skonhet:{icon:"✂️",background:"#874872"},
+  livsmedel:{icon:"🥖",background:"#8a5d2f"},
+  import:{icon:"🌍",background:"#28766f"},
+  fastighet:{icon:"🏢",background:"#455f82"}
+};
+const POPULAR_CATEGORY_IDS = ["restaurang","is","bolag","butik","bygg","transport","it","service"];
 function catCard(c){
-  return `<div class="card">
-    
-    <span class="tag ${c.full?'':'gray'}">${c.full?'Fullständig guide':'Kommande'}</span>
-    <h4>${esc(c.name)}</h4>
-    <p>${esc(c.desc)}</p>
-    <button class="btn btn-ghost btn-sm" data-cat="${c.id}">${c.full?'Öppna guide':'Se mer (kommande)'}</button>
-  </div>`;
+  const style = GUIDE_CARD_STYLE[c.id];
+  const isPopular = POPULAR_CATEGORY_IDS.includes(c.id);
+  return `<button type="button" class="guide-category-card${isPopular?'':' is-extra'}" data-cat="${esc(c.id)}" data-guide-card="${esc((c.name + " " + c.desc).toLowerCase())}" style="--guide-card-art:${style.background}">
+    <span class="guide-card-visual" aria-hidden="true">${style.icon}</span>
+    <span class="guide-card-content">
+      <strong>${esc(c.name)}</strong>
+      <span class="guide-card-description">${esc(c.desc)}</span>
+      <span class="guide-card-action" aria-hidden="true">→</span>
+    </span>
+  </button>`;
 }
-document.getElementById("catGrid").innerHTML = CATS.map(catCard).join("");
+document.getElementById("catGrid").innerHTML = [
+  ...POPULAR_CATEGORY_IDS.map(id=>CATS.find(c=>c.id===id)),
+  ...CATS.filter(c=>!POPULAR_CATEGORY_IDS.includes(c.id))
+].map(catCard).join("");
 document.getElementById("pCat").innerHTML = CATS.filter(c=>c.full).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+const guideExpandButton = document.getElementById("guideExpand");
+function setGuideExpanded(expanded){
+  guideExpandButton.dataset.expanded = String(expanded);
+  guideExpandButton.setAttribute("aria-expanded", String(expanded));
+  guideExpandButton.innerHTML = expanded
+    ? 'Visa färre guider <span aria-hidden="true">↑</span>'
+    : 'Se alla guider <span aria-hidden="true">→</span>';
+}
+guideExpandButton.addEventListener("click", ()=>{
+  setGuideExpanded(guideExpandButton.dataset.expanded !== "true");
+  filterGuideCards();
+});
+document.querySelectorAll("[data-guide-expand-link]").forEach(button=>button.addEventListener("click", ()=>{
+  document.getElementById("guideSearch").value = "";
+  setGuideExpanded(true);
+  filterGuideCards();
+  document.getElementById("catGrid").scrollIntoView({behavior:"smooth",block:"start"});
+}));
+function filterGuideCards(){
+  const query = document.getElementById("guideSearch").value.trim().toLowerCase();
+  const expanded = guideExpandButton.dataset.expanded === "true";
+  let visible = 0;
+  document.querySelectorAll("[data-guide-card]").forEach(card => {
+    const matches = card.dataset.guideCard.includes(query);
+    const show = matches && (query || expanded || !card.classList.contains("is-extra"));
+    card.hidden = !show;
+    if(show) visible++;
+  });
+  document.getElementById("guideCount").textContent = `Visar ${visible} av ${CATS.length} guider`;
+  document.getElementById("guidesEmpty").hidden = visible !== 0;
+}
+document.getElementById("guideSearch").addEventListener("input", filterGuideCards);
+document.getElementById("guideSearchBtn").addEventListener("click", ()=>{
+  filterGuideCards();
+  document.getElementById("catGrid").scrollIntoView({behavior:"smooth",block:"start"});
+});
+filterGuideCards();
 
 function openCat(id){
   const c = CATS.find(x=>x.id===id);
@@ -875,7 +934,246 @@ function withLink(text){
   const url = hit ? hit[1] : "https://www.verksamt.se";
   return `<a href="${url}" target="_blank" rel="noopener">${esc(text)}</a>`;
 }
+const GUIDE_ILLUSTRATIONS = {
+  restaurang:{icon:"🍽️", label:"Illustration av matservering", color:"#FFF1E7"},
+  is:{icon:"🏭", label:"Illustration av tillverkning", color:"#EAF4FF"},
+  bolag:{image:"/aktiebolag-fb.png", label:"Illustration om aktiebolag"},
+  butik:{icon:"🛍️", label:"Illustration av butik och e-handel", color:"#FCEFF4"},
+  service:{icon:"🧹", label:"Illustration av städ- och servicearbete", color:"#EAF8F2"},
+  bygg:{icon:"🏗️", label:"Illustration av byggarbete", color:"#FFF6D9"},
+  transport:{icon:"🚚", label:"Illustration av transport och logistik", color:"#E9F3F8"},
+  it:{icon:"💻", label:"Illustration av IT och teknik", color:"#EEF0FF"},
+  konsult:{icon:"💡", label:"Illustration av konsultverksamhet", color:"#FFF7D6"},
+  skonhet:{icon:"✂️", label:"Illustration av skönhet och personlig vård", color:"#FCEBFA"},
+  livsmedel:{icon:"🥖", label:"Illustration av livsmedelsproduktion", color:"#F9F1DF"},
+  import:{icon:"🌍", label:"Illustration av import och export", color:"#E7F6F5"},
+  fastighet:{icon:"🏢", label:"Illustration av fastighetsverksamhet", color:"#E9EDF5"}
+};
+function guideIllustration(id){
+  const illustration = GUIDE_ILLUSTRATIONS[id];
+  if(!illustration) return "";
+  if(illustration.image){
+    return `<img class="guide-img" src="${illustration.image}" alt="${esc(illustration.label)}">`;
+  }
+  return `<div class="guide-img guide-illustration" role="img" aria-label="${esc(illustration.label)}" style="--guide-illustration-bg:${illustration.color}">
+    <span aria-hidden="true">${illustration.icon}</span>
+  </div>`;
+}
+const AB_GUIDE_STEPS = [
+  {
+    icon:"✏️",
+    title:"Välj företagsnamn",
+    summary:"Hitta ett ledigt namn som slutar på AB.",
+    why:"Namnet måste vara ledigt. Bolagsverket kan avslå ett namnförslag, så det är bra att ha flera alternativ klara.",
+    how:["Tänk ut två till tre namnförslag. Namnet ska sluta med AB.","Sök efter varje namn i Bolagsverkets företagsinformation för att se om det redan finns.","Skriv ner det namn som är ledigt. Du använder det när du registrerar bolaget."],
+    docs:["Två till tre namnförslag, varav ett ska sluta med AB"],
+    auth:{name:"Bolagsverket – Sök företagsinformation",url:"https://bolagsverket.se"},
+    after:"När du har ett ledigt namn går du vidare till aktiekapitalet."
+  },
+  {
+    icon:"🏦",
+    title:"Ordna aktiekapital och bankintyg",
+    summary:"Öppna ett företagskonto och sätt in minst 25 000 kr.",
+    why:"Aktiekapitalet är bolagets startkapital. Bolagsverket kräver minst 25 000 kr, och att pengarna är insatta på ett konto. Bankintyget visar det.",
+    how:["Öppna ett företagskonto i en bank.","Sätt in minst 25 000 kr på kontot. Det är aktiekapitalet.","Be banken om ett bankintyg som visar att pengarna är insatta.","Om du inte vill använda bankintyg kan en auktoriserad revisor ge ett revisorsintyg i stället."],
+    docs:["Företagskonto","Insättning på minst 25 000 kr","Bankintyg eller revisorsintyg"],
+    auth:{name:"Bolagsverket",url:"https://bolagsverket.se"},
+    after:"Spara bankintyget. Du behöver det när du registrerar bolaget i steg 4."
+  },
+  {
+    icon:"📄",
+    title:"Skapa stiftelseurkund och bolagsordning",
+    summary:"Dokumenten som beskriver bolaget och hur det styrs.",
+    why:"Stiftelseurkunden visar att du har beslutat att starta bolaget. Bolagsordningen anger bolagets grundregler, till exempel verksamhet, aktiekapital och styrelse.",
+    how:["Logga in på Verksamt.se och starta en ansökan om aktiebolag.","Svara på frågorna. Verksamt.se skapar stiftelseurkund och bolagsordning utifrån dina svar.","Ladda ner dokumenten och kontrollera att uppgifterna stämmer.","Spara dokumenten. Du behöver dem när du registrerar bolaget och ansöker om bankintyg."],
+    docs:["Namn på bolaget","Aktiekapital och antal aktier","Uppgifter om styrelse och revisor"],
+    auth:{name:"Verksamt.se",url:"https://www.verksamt.se"},
+    after:"Kontrollera att dokumenten stämmer innan du registrerar bolaget i nästa steg."
+  },
+  {
+    icon:"📝",
+    title:"Registrera företaget",
+    summary:"Skicka in ansökan till Bolagsverket via Verksamt.se.",
+    why:"Bolaget finns inte juridiskt förrän det är registrerat. När det är registrerat får du ett organisationsnummer.",
+    how:["Gå till Verksamt.se och fortsätt ansökan från steg 3, eller starta en ny.","Fyll i uppgifterna om bolaget: namn, adress, räkenskapsår, aktieägare och styrelse.","Ladda upp bankintyget eller revisorsintyget när systemet frågar efter det.","Betala registreringsavgiften. Aktuell avgift visas på Verksamt.se och kan ändras.","Skicka in ansökan. Bolagsverket granskar den och meddelar när bolaget är registrerat."],
+    docs:["Stiftelseurkund och bolagsordning","Bankintyg eller revisorsintyg","Adress, räkenskapsår och uppgifter om aktieägare och styrelse"],
+    auth:{name:"Verksamt.se",url:"https://www.verksamt.se"},
+    after:"När bolaget är registrerat får du ett organisationsnummer. Registreringsbeviset kan du hämta via Mina sidor hos Bolagsverket."
+  },
+  {
+    icon:"👤",
+    title:"Anmäl verklig huvudman",
+    summary:"Ange vem eller vilka som i slutänden äger eller styr bolaget.",
+    why:"Varje aktiebolag ska anmäla sina verkliga huvudmän till Bolagsverket. Uppgifterna används för att motverka penningtvätt och för att visa vem som ytterst styr bolaget.",
+    how:["Ta reda på vem som i slutänden äger eller kontrollerar bolaget. Oftast är det den eller de som äger aktierna.","Anmäl uppgifterna till Bolagsverket inom fyra veckor från registreringen.","Gör anmälan elektroniskt via Bolagsverkets e-tjänst.","Spara bekräftelsen."],
+    docs:["Namn, personnummer och adress för den verkliga huvudmannen","Uppgifter om ägarandel eller kontroll"],
+    auth:{name:"Bolagsverket – Anmäl verklig huvudman",url:"https://bolagsverket.se/foretag/aktiebolag.475.html"},
+    after:"Gör anmälan inom fyra veckor från registreringen."
+  },
+  {
+    icon:"🧾",
+    title:"Registrera F-skatt och moms",
+    summary:"Skatteverket behöver känna till bolaget för skatt och moms.",
+    why:"F-skatt behövs oftast när bolaget fakturerar andra företag. Moms gäller när omsättningen är över en viss gräns, och arbetsgivarregistrering krävs när du betalar ut ersättning för arbete.",
+    how:["Kontrollera om ditt bolag behöver F-skatt. Det gäller oftast när bolaget fakturerar andra företag.","Ansök om F-skatt hos Skatteverket, och momsregistrering om din omsättning kräver det.","Registrera dig som arbetsgivare innan du betalar ut lön till någon anställd."],
+    docs:["Organisationsnummer","Uppgifter om verksamheten och förväntad omsättning"],
+    auth:{name:"Skatteverket – Starta och registrera företag",url:"https://www.skatteverket.se/foretag/drivaforetag/startaochregistrera"},
+    after:"När registreringarna är klara kan bolaget fakturera och betala ut lön."
+  },
+  {
+    icon:"🚀",
+    title:"Förbered verksamhetsstarten",
+    summary:"Ordna det praktiska innan du börjar sälja.",
+    why:"Ett aktiebolag har återkommande skyldigheter. Bokföring och årsredovisning måste skötas varje år, och det blir enklare om du ordnar det från början.",
+    how:["Ordna bokföring och kvitton från första dagen.","Kontrollera att du har rätt försäkringar för verksamheten.","Kontrollera om verksamheten kräver tillstånd hos kommunen eller en annan myndighet.","Notera när årsredovisningen ska lämnas in. Den ska vara inlämnad senast sju månader efter räkenskapsårets slut."],
+    docs:["Bokföringssystem eller bokföringshjälp","Försäkringar","Kontaktuppgifter till kommunen om tillstånd behövs"],
+    auth:{name:"Bolagsverket – årsredovisning",url:"https://bolagsverket.se"},
+    after:"Nu är bolaget redo att starta. Skyldigheterna fortsätter varje år."
+  }
+];
+const AB_GUIDE_TIMES = ["Ett par timmar","Beror på banken","Ett par timmar","Ofta 1 dag via e-tjänst","Inom fyra veckor","Varierar","Löpande"];
+const AB_GUIDE_DONE_KEY = "sesm_ab_guide_done_v1";
+const AB_GUIDE_DOCS_KEY = "sesm_ab_guide_docs_v1";
+let openABGuideStep = null;
+let abGuideDone = readABGuideChecks(AB_GUIDE_DONE_KEY, true);
+let abGuideDocsDone = readABGuideChecks(AB_GUIDE_DOCS_KEY, false);
+
+function readABGuideChecks(key, numeric){
+  try{
+    const stored = JSON.parse(localStorage.getItem(key) || "[]");
+    if(!Array.isArray(stored)) return [];
+    return [...new Set(stored.filter(value => numeric
+      ? Number.isInteger(value) && value >= 0 && value < AB_GUIDE_STEPS.length
+      : typeof value === "string"))];
+  }catch(error){
+    console.warn("Kunde inte läsa sparade framsteg för aktiebolagsguiden.", error);
+    return [];
+  }
+}
+function saveABGuideChecks(key, values){
+  try{
+    localStorage.setItem(key, JSON.stringify(values));
+  }catch(error){
+    console.error("Kunde inte spara framsteg för aktiebolagsguiden.", error);
+    alert("Framstegen kunde inte sparas i den här webbläsaren.");
+  }
+}
+function renderABGuide(){
+  const body = document.getElementById("guideBody");
+  const total = AB_GUIDE_STEPS.length;
+  const docs = [...new Set(AB_GUIDE_STEPS.flatMap(step => step.docs))];
+  const doneCount = abGuideDone.length;
+  const next = AB_GUIDE_STEPS.findIndex((_, index) => !abGuideDone.includes(index));
+  body.innerHTML = `
+    <p><a href="#" data-go="guides" style="color:#0369A1;font-weight:600">← Alla företagsguider</a></p>
+    <div class="abg">
+      <div class="abg-header">
+        <div>
+          <h2>Starta ett aktiebolag – steg för steg</h2>
+          <p class="lead">Så här startar du ett aktiebolag, från namn till verksamhetsstart. Öppna varje steg för att se vad du ska göra.</p>
+        </div>
+      </div>
+      <div class="abg-progress" aria-label="Framsteg"><div class="abg-progress__bar" style="width:${doneCount / total * 100}%"></div></div>
+      <p class="abg-progress__text">${doneCount} av ${total} steg klara</p>
+      <h3 class="abg-heading">Översikt</h3>
+      <div class="abg-layout">
+        <ol class="abg-list">
+          ${AB_GUIDE_STEPS.map((step, index) => {
+            const isOpen = openABGuideStep === index;
+            const isDone = abGuideDone.includes(index);
+            return `<li class="abg-item">
+              <button class="abg-card${isOpen ? " open" : ""}" type="button" data-ab-step="${index}" aria-expanded="${isOpen}">
+                <span class="abg-icon${isDone ? " is-done" : ""}" aria-hidden="true">${isDone ? "✓" : step.icon}</span>
+                <span class="abg-text">
+                  <span class="abg-step">Steg ${index + 1} av ${total}</span>
+                  <strong>${esc(step.title)}${isDone ? ' <span class="abg-tag-done">Klart</span>' : ""}</strong>
+                  <small>${esc(step.summary)}</small>
+                  <span class="abg-time">⏱ ${esc(AB_GUIDE_TIMES[index])}</span>
+                </span>
+                <span class="abg-toggle" aria-hidden="true">${isOpen ? "−" : "+"}</span>
+              </button>
+              ${isOpen ? `<div class="abg-detail">
+                <div class="abg-meta">Steg ${index + 1} av ${total}</div>
+                <section><h4>Varför är detta viktigt?</h4><p>${esc(step.why)}</p></section>
+                <section><h4>Så gör du</h4><ol class="abg-how">${step.how.map(item => `<li>${esc(item)}</li>`).join("")}</ol></section>
+                <section><h4>Dokument och uppgifter du behöver</h4><ul class="abg-docs">${step.docs.map(item => `<li>${esc(item)}</li>`).join("")}</ul></section>
+                <div class="abg-actions">
+                  <a class="abg-button" href="${esc(step.auth.url)}" target="_blank" rel="noopener">${esc(step.auth.name)} →</a>
+                  <label class="abg-check"><input type="checkbox" data-ab-done="${index}" ${isDone ? "checked" : ""}> Markera som klar</label>
+                </div>
+                <div class="abg-after"><strong>När steget är klart:</strong> ${esc(step.after)}</div>
+              </div>` : ""}
+            </li>`;
+          }).join("")}
+        </ol>
+        <aside class="abg-side">
+          <div class="abg-summary">
+            <h3>Din sammanfattning</h3>
+            <dl>
+              <div><dt>Aktiekapital</dt><dd>minst 25 000 kr</dd></div>
+              <div><dt>Ansökan</dt><dd>Verksamt.se</dd></div>
+              <div><dt>Antal steg</dt><dd>${total}</dd></div>
+              <div><dt>Total tid</dt><dd>ca 4–6 veckor</dd></div>
+              <div><dt>Klara</dt><dd>${doneCount} av ${total}</dd></div>
+            </dl>
+            <p class="abg-source">Tiderna är ungefärliga och varierar. Kontrollera alltid aktuella krav, avgifter och handläggningstider hos ansvarig myndighet.</p>
+            <button class="abg-next" type="button" data-ab-next ${next === -1 ? "disabled" : ""}>${next === -1 ? "Alla steg är klara" : "Börja på nästa steg →"}</button>
+          </div>
+          <div class="abg-checklist">
+            <h3>Dokument du behöver</h3>
+            <p class="abg-checklist__sub">${docs.filter(doc => abGuideDocsDone.includes(doc)).length} av ${docs.length} klara</p>
+            <ul>${docs.map((doc, index) => `<li><label><input type="checkbox" data-ab-doc="${index}" ${abGuideDocsDone.includes(doc) ? "checked" : ""}><span>${esc(doc)}</span></label></li>`).join("")}</ul>
+          </div>
+        </aside>
+      </div>
+      <p class="abg-note">Planeringsunderlag. Kontrollera alltid aktuella krav och avgifter hos ansvarig myndighet.</p>
+    </div>`;
+}
+
+document.getElementById("guideBody").addEventListener("click", event => {
+  const stepButton = event.target.closest("[data-ab-step]");
+  if(stepButton){
+    const index = Number(stepButton.dataset.abStep);
+    openABGuideStep = openABGuideStep === index ? null : index;
+    renderABGuide();
+    return;
+  }
+  if(event.target.closest("[data-ab-next]")){
+    const next = AB_GUIDE_STEPS.findIndex((_, index) => !abGuideDone.includes(index));
+    if(next !== -1){
+      openABGuideStep = next;
+      renderABGuide();
+      document.querySelector(`[data-ab-step="${next}"]`)?.scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  }
+});
+document.getElementById("guideBody").addEventListener("change", event => {
+  const doneInput = event.target.closest("[data-ab-done]");
+  if(doneInput){
+    const index = Number(doneInput.dataset.abDone);
+    abGuideDone = doneInput.checked
+      ? [...new Set([...abGuideDone, index])]
+      : abGuideDone.filter(value => value !== index);
+    saveABGuideChecks(AB_GUIDE_DONE_KEY, abGuideDone);
+    renderABGuide();
+    return;
+  }
+  const docInput = event.target.closest("[data-ab-doc]");
+  if(docInput){
+    const docs = [...new Set(AB_GUIDE_STEPS.flatMap(step => step.docs))];
+    const doc = docs[Number(docInput.dataset.abDoc)];
+    abGuideDocsDone = docInput.checked
+      ? [...new Set([...abGuideDocsDone, doc])]
+      : abGuideDocsDone.filter(value => value !== doc);
+    saveABGuideChecks(AB_GUIDE_DOCS_KEY, abGuideDocsDone);
+    renderABGuide();
+  }
+});
 function renderGuide(id){
+  if(id === "bolag"){
+    renderABGuide();
+    return;
+  }
   const g = GUIDES[id];
   if(!g) return;
   document.getElementById("guideBody").innerHTML = `
@@ -894,7 +1192,7 @@ function renderGuide(id){
         </div>
         <p class="checked">Planeringsunderlag. Kontrollera alltid hos ansvarig myndighet.</p>
       </div>
-      <img class="guide-img" data-guide="${id}" src="./aktiebolag-fb.png" alt="Illustration om aktiebolag">
+      ${guideIllustration(id)}
       
     </div>`;
 }
