@@ -829,10 +829,13 @@ function catCard(c){
   const style = GUIDE_CARD_STYLE[c.id];
   const isPopular = POPULAR_CATEGORY_IDS.includes(c.id);
   return `<button type="button" class="guide-category-card${isPopular?'':' is-extra'}" data-cat="${esc(c.id)}" data-guide-card="${esc((c.name + " " + c.desc).toLowerCase())}" style="--guide-card-art:${style.background}">
-    <span class="guide-card-visual" aria-hidden="true">${style.icon}</span>
+    <span class="guide-card-image" aria-hidden="true"></span>
     <span class="guide-card-content">
-      <strong>${esc(c.name)}</strong>
-      <span class="guide-card-description">${esc(c.desc)}</span>
+      <span class="guide-card-visual" aria-hidden="true">${style.icon}</span>
+      <span class="guide-card-copy">
+        <strong>${esc(c.name)}</strong>
+        <span class="guide-card-description">${esc(c.desc)}</span>
+      </span>
       <span class="guide-card-action" aria-hidden="true">→</span>
     </span>
   </button>`;
