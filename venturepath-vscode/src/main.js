@@ -1635,8 +1635,10 @@ window.addEventListener("scroll", fadeBoxes, {passive: true});
 window.addEventListener("resize", fadeBoxes);
 
 const dashEl = document.getElementById("dash");
-const DASH_COUNT_MS = 25000;
-let dashRaf = null, dashStart = 0, dashLast = 0, dashCountT = 0;
+const DASH_RAMP_MS = 3000;
+const DASH_HOLD_MS = 10000;
+const DASH_CYCLE_MS = DASH_RAMP_MS * 2 + DASH_HOLD_MS;
+let dashRaf = null, dashStart = 0;
 function renderDash(p){
   if(!dashEl) return;
   const line = dashEl.querySelector(".linechart .line");
@@ -1645,13 +1647,17 @@ function renderDash(p){
   dots.forEach((d, i) => { d.style.opacity = p > (i + 1) / (dots.length + 1) ? 1 : 0; });
 }
 function dashLoop(ts){
-  if(!dashStart){ dashStart = ts; dashLast = ts; }
-  dashCountT = Math.min(DASH_COUNT_MS, dashCountT + (ts - dashLast));
-  dashLast = ts;
-
-  const period = 6000;
-  const phase = ((ts - dashStart) % period) / period;
-  const pp = (1 - Math.cos(2 * Math.PI * phase)) / 2;
+  if(!dashStart) dashStart = ts;
+  const cycleTime = (ts - dashStart) % DASH_CYCLE_MS;
+  let pp;
+  if(cycleTime < DASH_RAMP_MS){
+    pp = (1 - Math.cos(Math.PI * cycleTime / DASH_RAMP_MS)) / 2;
+  } else if(cycleTime < DASH_RAMP_MS + DASH_HOLD_MS){
+    pp = 1;
+  } else {
+    const downTime = cycleTime - DASH_RAMP_MS - DASH_HOLD_MS;
+    pp = (1 + Math.cos(Math.PI * downTime / DASH_RAMP_MS)) / 2;
+  }
   renderDash(pp);
   dashEl.querySelectorAll("[data-count]").forEach(n => { n.textContent = Math.round(pp * Number(n.dataset.count)); });
   dashEl.querySelectorAll(".bar-fill").forEach(bar => { bar.style.width = (pp * Number(bar.dataset.w)) + "%"; });
